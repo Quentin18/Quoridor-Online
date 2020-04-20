@@ -12,7 +12,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Quentin18/Quoridor-Online",
-    packages=["quoridor", "quoridor.client", "quoridor.server"],
+    packages=["quoridor", "quoridor.client", "quoridor.client.src",
+              "quoridor.server", "quoridor.server.src"],
     include_package_data=True,
     install_requires=['pygame', 'pathfinding'],
     classifiers=[
