@@ -23,9 +23,12 @@ def threaded_client(conn, nb_players, num_player, game_id, games):
                 elif data.split(":")[0] == "name":
                     game.add_name(data)
                     conn.sendall(pickle.dumps(game))
-                elif data != "get":
-                    game.play(data)
-                conn.sendall(pickle.dumps(game))
+                elif "get" not in data:
+                    try:
+                        game.play(data)
+                        conn.sendall(pickle.dumps(game))
+                    except Exception:
+                        pass
             else:
                 break
         except Exception:
