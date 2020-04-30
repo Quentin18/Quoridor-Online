@@ -108,7 +108,7 @@ def client(host, port):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Not enough arguments: give the host adress and the port number")
+        print("Not enough arguments: [Host address] [Port number]")
     else:
         host = str(sys.argv[1])
         port = int(sys.argv[2])

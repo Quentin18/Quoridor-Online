@@ -26,9 +26,9 @@ def threaded_client(conn, nb_players, num_player, game_id, games):
                 elif "get" not in data:
                     try:
                         game.play(data)
-                        conn.sendall(pickle.dumps(game))
                     except Exception:
                         pass
+                conn.sendall(pickle.dumps(game))
             else:
                 break
         except Exception:
@@ -81,7 +81,7 @@ def server(host, port, nb_players):
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Not enough arguments")
-        print("Give the host adress the port number and the number of players")
+        print("[Host address] [Port number] [Number of players]")
     else:
         host = str(sys.argv[1])
         port = int(sys.argv[2])
@@ -91,4 +91,4 @@ if __name__ == "__main__":
         else:
             server(host, port, nb_players)
 
-# Get IP adress on Linux: hostname -I
+# Get IP address on Linux: hostname -I
