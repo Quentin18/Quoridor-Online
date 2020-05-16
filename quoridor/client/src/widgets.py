@@ -23,13 +23,14 @@ class Text:
 
 class Button:
     """Create a button"""
-    def __init__(self, text, x, y, color, width=150, height=40):
+    def __init__(self, text, x, y, color, width=150, height=40, show=True):
         self.text = text
         self.x = x
         self.y = y
         self.color = color
         self.width = width
         self.height = height
+        self.show = show
 
     def draw(self, win):
         """Draw the button on the window"""

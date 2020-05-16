@@ -18,7 +18,7 @@ def pos_in_rect(rect, pos):
 
 class Window:
     """Create the window"""
-    def __init__(self, width=1000, height=800, case_side=65, wall_width=15,
+    def __init__(self, width=1000, height=830, case_side=65, wall_width=15,
                  title="Quoridor Online", bgcolor=Colors.white):
         self.width = width
         self.height = height
@@ -30,12 +30,20 @@ class Window:
         self.win = pygame.display.set_mode((width, height))
         pygame.display.set_caption(title)
         self.button_restart = Button("Restart", self.side_board + 60,
-                                     self.side_board - 100, Colors.red)
+                                     self.side_board - 100, Colors.red,
+                                     show=False)
         self.button_quit = Button("Quit", self.side_board + 60,
                                   self.side_board - 50, Colors.red)
         self.buttons = [self.button_restart, self.button_quit]
-        self.title = Text("Quoridor", Colors.black, size=45)
+        self.title = Text("Quoridor", Colors.black, size=50)
+        self.info = Text("Welcome to Quoridor Online!", Colors.black, size=45)
         self.coords = Coords(self)
+
+    def update_info(self, text, color=None):
+        """Update info text"""
+        self.info.text = text
+        if color is not None:
+            self.info.color = color
 
     def draw_game_board(self, pos):
         """Draw the game board"""
@@ -56,70 +64,57 @@ class Window:
     def draw_finish_lines(self, players):
         """Draw the finish lines with the player's color"""
         for p in players.players:
-            if p.orient == "north":
-                pygame.draw.line(
-                    self.win, p.color,
-                    (self.top_left[0], self.top_left[1] + self.side_board),
-                    (self.top_left[0] + self.side_board,
-                     self.top_left[1] + self.side_board),
-                    self.wall_width)
-            elif p.orient == "east":
-                pygame.draw.line(
-                    self.win, p.color,
-                    (self.top_left[0], self.top_left[1]),
-                    (self.top_left[0], self.top_left[1] + self.side_board),
-                    self.wall_width)
-            elif p.orient == "south":
-                pygame.draw.line(
-                    self.win, p.color,
-                    (self.top_left[0], self.top_left[1]),
-                    (self.top_left[0] + self.side_board, self.top_left[1]),
-                    self.wall_width)
-            elif p.orient == "west":
-                pygame.draw.line(
-                    self.win, p.color,
-                    (self.top_left[0] + self.side_board, self.top_left[1]),
-                    (self.top_left[0] + self.side_board,
-                     self.top_left[1] + self.side_board),
-                    self.wall_width)
+            if p.name != '':
+                if p.orient == "north":
+                    pygame.draw.line(
+                        self.win, p.color,
+                        (self.top_left[0], self.top_left[1] + self.side_board),
+                        (self.top_left[0] + self.side_board,
+                         self.top_left[1] + self.side_board),
+                        self.wall_width)
+                elif p.orient == "east":
+                    pygame.draw.line(
+                        self.win, p.color,
+                        (self.top_left[0], self.top_left[1]),
+                        (self.top_left[0], self.top_left[1] + self.side_board),
+                        self.wall_width)
+                elif p.orient == "south":
+                    pygame.draw.line(
+                        self.win, p.color,
+                        (self.top_left[0], self.top_left[1]),
+                        (self.top_left[0] + self.side_board, self.top_left[1]),
+                        self.wall_width)
+                elif p.orient == "west":
+                    pygame.draw.line(
+                        self.win, p.color,
+                        (self.top_left[0] + self.side_board, self.top_left[1]),
+                        (self.top_left[0] + self.side_board,
+                         self.top_left[1] + self.side_board),
+                        self.wall_width)
 
-    def draw_right_panel(self, players, num_current, finish_game):
+    def draw_right_panel(self, game, players):
         """Draw the right panel with player's informations"""
         x, y = self.side_board + 50, 20
-        self.title.draw(self.win, (x + 20, y))
+        self.title.draw(self.win, (x + 10, y))
         for p in players.players:
-            text_player = Text(f"{p.name}: {p.walls_remain} walls", p.color)
-            text_player.draw(self.win, (x, y + 100*p.num_player + 100))
-        if not finish_game:
-            current = players.players[num_current]
-            text_current = Text(f"{current.name} plays!", current.color)
-        else:
-            winner = players.players[num_current - 1]
-            text_current = Text(f"{winner.name} wins!", winner.color)
-        text_current.draw(self.win, (x, y + 100*4 + 100))
+            if p.name != '':
+                text_p = Text(f"{p.name}: {p.walls_remain} walls", p.color)
+                text_p.draw(self.win, (x, y + 100*p.num_player + 100))
 
     def draw_buttons(self):
         """Draw buttons"""
         for b in self.buttons:
-            b.draw(self.win)
+            if b.show:
+                b.draw(self.win)
 
-    def redraw_window(self, finish_game, players, walls, game, pos):
+    def redraw_window(self, game, players, walls, pos):
         """Redraw the full window"""
         self.win.fill(self.bgcolor)
-        if not game.ready():
-            # image = pygame.image.load("quoridor.jpg")
-            # image = pygame.transform.scale2x(image)
-            title = Text("Quoridor Online", Colors.black, size=100)
-            text = Text(f"Waiting for {game.players_missing()} players...",
-                        Colors.black)
-            # self.win.blit(image, (100, 100))
-            title.draw(self.win, (30, 100))
-            text.draw(self.win, (30, 300))
-        else:
-            self.draw_game_board(pos)
-            self.draw_finish_lines(players)
-            self.draw_right_panel(players, game.current_player, finish_game)
-            self.draw_buttons()
-            players.draw(self)
-            walls.draw()
+        self.draw_game_board(pos)
+        self.draw_finish_lines(players)
+        self.draw_right_panel(game, players)
+        self.draw_buttons()
+        players.draw(self)
+        walls.draw()
+        self.info.draw(self.win, (self.top_left[0], self.height - 50))
         pygame.display.update()

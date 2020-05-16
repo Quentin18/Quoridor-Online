@@ -14,30 +14,28 @@ def threaded_client(conn, nb_players, num_player, game_id, games):
     conn.send(str.encode(first_data))
     while True:
         try:
-            data = conn.recv(2048*2).decode()
+            data = conn.recv(2048).decode()
             if game_id in games:
                 game = games[game_id]
 
                 if not data:
                     break
-                elif data.split(":")[0] == "name":
+                elif data.split(';')[0] == 'N':
                     game.add_name(data)
-                    conn.sendall(pickle.dumps(game))
-                elif "get" not in data:
-                    try:
-                        game.play(data)
-                    except Exception:
-                        pass
+                elif data.split(';')[0] == 'P':
+                    game.play(data)
+                elif data.split(';')[0] == 'R':
+                    game.restart(data)
                 conn.sendall(pickle.dumps(game))
             else:
                 break
-        except Exception:
-            break
+        except socket.error as e:
+            print(e)
 
     print("Lost connection")
     try:
         del games[game_id]
-        print("Closing Game", game_id)
+        print("Closing game", game_id)
     except Exception:
         pass
     conn.close()
@@ -52,7 +50,7 @@ def server(host, port, nb_players):
         str(e)
 
     s.listen(nb_players)
-    print("Server Started\nWaiting for a connection...")
+    print("Server Started!\nWaiting for a connection...")
 
     games = {}
     num_player = 0
@@ -62,18 +60,15 @@ def server(host, port, nb_players):
         conn, addr = s.accept()
         print("Connected to:", addr)
         if game_id not in games:
+            num_player = 0
             games[game_id] = Game(game_id, nb_players)
-            print("Creating new game...")
         games[game_id].add_player()
-        print(f"Player {num_player} added to game {game_id}")
 
         start_new_thread(threaded_client,
                          (conn, nb_players, num_player, game_id, games))
         if games[game_id].ready():
-            print(f"Game {game_id} starts")
             games[game_id].start()
             game_id += 1
-            num_player = 0
         else:
             num_player = num_player + 1
 

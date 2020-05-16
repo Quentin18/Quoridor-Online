@@ -13,20 +13,40 @@ from quoridor.client.src.pathfinder import PathFinder
 
 
 def client(host, port):
+    """Game client"""
     print("Welcome to Quoridor Online!")
-    name = input("Enter your name: ").capitalize()
-    run = True
+    # Name input
+    name = ''
+    while name == '' or len(name) > 10:
+        name = input("Enter your name: ").capitalize()
+        if len(name) > 10:
+            print("Too long")
     print("Host:", host)
     print("Port:", port)
     print("Waiting for the server...")
+
+    # Connexion
+    n = Network(host, port)
     try:
-        n = Network(host, port)
-        data = n.getP().split(";")
+        n.connect()
+        # Receive nb players, num player
+        data = n.recv()
+        nb_players, num_player = int(data[0]), int(data[1])
     except Exception:
         print("Unable to connect to the server")
-        quit()
-    nb_players, num_player = int(data[0]), int(data[1])
+        exit()
 
+    # Send name
+    try:
+        n.send(';'.join(['N', str(num_player), name]))
+    except Exception:
+        print("Impossible to send data to the server")
+        exit()
+
+    print("Connexion established!")
+    print(f"Hello {name}! You are player {num_player}!")
+
+    # Init pygame
     pygame.init()
     clock = pygame.time.Clock()
     pygame.mixer.init()
@@ -34,74 +54,90 @@ def client(host, port):
     file = "".join([path, "/sounds/winning_sound.wav"])
     winning_sound = pygame.mixer.Sound(file)
 
+    # Init game
     win = Window()
     coords = win.coords
     players = Players(nb_players, coords)
     player = players.players[num_player]
-    player.set_name(name)
     walls = Walls()
     pf = PathFinder()
-    print("Connexion established!")
-    print(f"Hello {player.name}! You are player {num_player}!")
-    last_play = ""
 
-    n.send(f"name:{player.name}")
-    finish_game = False
-    set_names = False
+    last_play = ''
+    run = True
+    ready = False
+    start = False
 
     while run:
         clock.tick(40)
+        n.send('get')
         try:
-            game = n.send("get")
+            game = n.get_game()
         except Exception:
             run = False
             print("Couldn't get game")
             break
 
-        if not set_names and len(game.names) == nb_players:
-            players.set_names(game)
-            set_names = True
+        # Start a game
+        if not start:
+            if not ready:
+                players.set_names(game.names)
+                win.update_info(
+                    f"Waiting for {game.players_missing()} players...")
+                ready = game.ready()
+            if game.run:
+                current_p = players.players[game.current_player]
+                win.update_info(f"Let's go! {current_p.name} plays!",
+                                current_p.color)
+                start = True
+            elif game.wanted_restart != []:
+                nb = len(game.wanted_restart)
+                p = players.players[game.wanted_restart[-1]]
+                win.update_info(
+                    f"{p.name} wants to restart! ({nb}/{nb_players})",
+                    p.color)
 
-        if not finish_game:
+        # Continue a game
+        else:
             get_play = game.last_play
-            if get_play != "" and get_play != last_play:
-                if not players.play(get_play, coords, walls, pf):
-                    print(f"{game.names[game.current_player - 1]} wins!")
+            if get_play != '' and get_play != last_play:
+                if players.play(get_play, coords, walls, pf):
+                    current_p = players.players[game.current_player]
+                    win.update_info(f"{current_p.name} plays!",
+                                    current_p.color)
+                else:
+                    win.update_info(f"{game.winner} wins!")
                     winning_sound.play()
-                    finish_game = True
+                    win.button_restart.show = True
+                    start = False
                 last_play = get_play
-            if game.current_player == num_player:
-                player.has_played = False
 
         pos = pygame.mouse.get_pos()
-        win.redraw_window(finish_game, players, walls, game, pos)
+        win.redraw_window(game, players, walls, pos)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 if win.button_quit.click(pos):
                     run = False
                     pygame.quit()
-                elif finish_game and win.button_restart.click(pos):
+                elif (not game.run and win.button_restart.click(pos)
+                        and win.button_restart.show):   # Restart
                     coords.reset()
                     players.reset(coords)
                     walls.reset()
                     pf.reset()
-                    finish_game = False
-                elif (not finish_game and not player.has_played
-                        and player.has_walls()):
-                    game = player.play_put_wall(
-                        game, pos, coords, walls, n, pf, players)
+                    win.button_restart.show = False
+                    n.send(';'.join(['R', str(num_player)]))
+                elif player.can_play_wall(game):    # Put a wall
+                    player.play_put_wall(pos, coords, walls, n, pf, players)
 
-        if not finish_game and not player.has_played:
-            try:
-                game = player.play_move(game, walls, n)
-            except Exception:
-                pass
+            elif event.type == pygame.KEYDOWN:  # Move pawn
+                if player.can_play(game):
+                    player.play_move(walls, n)
 
     print("Good bye!")
 

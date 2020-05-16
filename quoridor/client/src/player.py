@@ -16,13 +16,12 @@ class Player():
         self.color = color
         self.coord = coord
         self.radius = radius
-        self.name = orient.capitalize()
-        self.has_played = True
+        self.name = ''
         self.walls_remain = walls_remain
 
     def set_name(self, name):
         """Set the name of the player"""
-        if name != "":
+        if name != '':
             self.name = name
 
     def get_num_player(self):
@@ -33,18 +32,25 @@ class Player():
         """Return True if the player has walls"""
         return self.walls_remain > 0
 
-    def send_move(self, game, network, coord):
+    def can_play(self, game):
+        """Return True if the player can play"""
+        return game.run and game.current_player == self.num_player
+
+    def can_play_wall(self, game):
+        """Return True if the player can play a wall"""
+        return self.can_play(game) and self.has_walls()
+
+    def send_move(self, network, coord):
         """Send a move to the server"""
-        self.has_played = True
         if self.has_win(coord):
             win = "w"
         else:
             win = "c"
-        data = ";".join([str(self.num_player), str(0),
+        data = ";".join(['P', str(self.num_player), str(0),
                         str(coord.x), str(coord.y), win])
-        return network.send(data)
+        network.send(data)
 
-    def play_move(self, game, walls, network):
+    def play_move(self, walls, network):
         """Play a move if it is possible"""
         keys = pygame.key.get_pressed()
         coord = self.coord
@@ -57,9 +63,9 @@ class Player():
                     c2 = c.west
                     if (c2 is not None and not c2.is_occuped
                             and walls.no_wall(c, c2)):
-                        game = self.send_move(game, network, c2)
+                        self.send_move(network, c2)
                 else:
-                    game = self.send_move(game, network, c)
+                    self.send_move(network, c)
 
         # Right
         elif keys[pygame.K_RIGHT]:
@@ -69,9 +75,9 @@ class Player():
                     c2 = c.east
                     if (c2 is not None and not c2.is_occuped
                             and walls.no_wall(c, c2)):
-                        game = self.send_move(game, network, c2)
+                        self.send_move(network, c2)
                 else:
-                    game = self.send_move(game, network, c)
+                    self.send_move(network, c)
 
         # Up
         elif keys[pygame.K_UP]:
@@ -81,9 +87,9 @@ class Player():
                     c2 = c.north
                     if (c2 is not None and not c2.is_occuped
                             and walls.no_wall(c, c2)):
-                        game = self.send_move(game, network, c2)
+                        self.send_move(network, c2)
                 else:
-                    game = self.send_move(game, network, c)
+                    self.send_move(network, c)
 
         # Down
         elif keys[pygame.K_DOWN]:
@@ -93,20 +99,17 @@ class Player():
                     c2 = c.south
                     if (c2 is not None and not c2.is_occuped
                             and walls.no_wall(c, c2)):
-                        game = self.send_move(game, network, c2)
+                        self.send_move(network, c2)
                 else:
-                    game = self.send_move(game, network, c)
+                    self.send_move(network, c)
 
-        return game
-
-    def send_wall(self, game, network, coord, orient):
+    def send_wall(self, network, coord, orient):
         """Send a wall to the server"""
-        self.has_played = True
-        data = ";".join([str(self.num_player), str(1),
+        data = ";".join(['P', str(self.num_player), str(1),
                         str(coord.x), str(coord.y), orient])
-        return network.send(data)
+        network.send(data)
 
-    def play_put_wall(self, game, pos, coords, walls, network,
+    def play_put_wall(self, pos, coords, walls, network,
                       path_finder, players):
         """Put a wall if it is possible"""
         found = False
@@ -117,14 +120,13 @@ class Player():
                 if (w is not None and pos_in_rect(w.rect_small, pos)
                         and walls.can_add(w)):
                     if path_finder.play_wall(w, players):
-                        game = self.send_wall(game, network, c, w.orient)
+                        self.send_wall(network, c, w.orient)
                         found = True
                         break
                     else:
                         print("You can't block players!")
             if found:
                 break
-        return game
 
     def draw(self, win):
         """Draw player on the game board"""
@@ -171,7 +173,8 @@ class Players:
     def draw(self, win):
         """Draw all players on the game board"""
         for p in self.players:
-            p.draw(win)
+            if p.name != '':
+                p.draw(win)
 
     def get_player(self, num_player):
         """Get a player"""
@@ -180,19 +183,19 @@ class Players:
     def play(self, last_play, coords, walls, path_finder):
         """Make a player play"""
         data = last_play.split(";")
-        player = self.get_player(int(data[0]))
-        type_play = int(data[1])
-        x, y = int(data[2]), int(data[3])
+        player = self.get_player(int(data[1]))
+        type_play = int(data[2])
+        x, y = int(data[3]), int(data[4])
         if type_play == 0:   # Move
             player.coord.is_occuped = False
             player.coord = coords.find_coord(x, y)
             player.coord.is_occuped = True
-            win = data[4]
+            win = data[5]
             if win == "w":
                 return False
             return True
         elif type_play == 1:    # Wall
-            orient = data[4]
+            orient = data[5]
             coord_wall = coords.find_coord(x, y)
             if orient == "e":
                 wall = coord_wall.wall_east
@@ -204,9 +207,9 @@ class Players:
             path_finder.add_wall(wall)
         return True
 
-    def set_names(self, game):
+    def set_names(self, names):
         """Set the names of players"""
-        for player, name in zip(self.players, game.names):
+        for player, name in zip(self.players, names):
             player.set_name(name)
 
     def reset(self, coords):
