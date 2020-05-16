@@ -10,6 +10,7 @@ from quoridor.server.src.game import Game
 
 
 def threaded_client(conn, nb_players, num_player, game_id, games):
+    """Manage threads for clients"""
     first_data = ";".join([str(nb_players), str(num_player)])
     conn.send(str.encode(first_data))
     while True:
@@ -42,6 +43,7 @@ def threaded_client(conn, nb_players, num_player, game_id, games):
 
 
 def server(host, port, nb_players):
+    """Game server"""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     try:
