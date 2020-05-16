@@ -103,18 +103,23 @@ def client(host, port):
         else:
             get_play = game.last_play
             if get_play != '' and get_play != last_play:
-                if players.play(get_play, coords, walls, pf):
+                if get_play[0] == 'D':
                     current_p = players.players[game.current_player]
                     win.update_info(f"{current_p.name} plays!",
                                     current_p.color)
-                else:
-                    win.update_info(f"{game.winner} wins!")
-                    try:
-                        sounds.winning_sound.play()
-                    except Exception:
-                        pass
-                    win.button_restart.show = True
-                    start = False
+                elif get_play[0] == 'P':
+                    if players.play(get_play, coords, walls, pf):
+                        current_p = players.players[game.current_player]
+                        win.update_info(f"{current_p.name} plays!",
+                                        current_p.color)
+                    else:
+                        win.update_info(f"{game.winner} wins!")
+                        try:
+                            sounds.winning_sound.play()
+                        except Exception:
+                            pass
+                        win.button_restart.show = True
+                        start = False
                 last_play = get_play
 
         pos = pygame.mouse.get_pos()

@@ -6,6 +6,7 @@ import pygame
 
 
 class Sounds:
+    """Manage sounds"""
     def __init__(self, path):
         pygame.mixer.init()
         self.start_sound = pygame.mixer.Sound(

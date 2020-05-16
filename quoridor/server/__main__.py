@@ -33,8 +33,7 @@ def threaded_client(conn, nb_players, num_player, game_id, games):
         except socket.error as e:
             print(e)
 
-    print("Lost connection")
-    games.del_game(game_id)
+    games.remove_player(game_id, num_player)
     conn.close()
 
 
