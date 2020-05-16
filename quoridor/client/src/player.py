@@ -112,7 +112,6 @@ class Player():
     def play_put_wall(self, pos, coords, walls, network,
                       path_finder, players):
         """Put a wall if it is possible"""
-        found = False
         for c in coords.coords:
             wall_east = c.wall_east
             wall_south = c.wall_south
@@ -121,12 +120,10 @@ class Player():
                         and walls.can_add(w)):
                     if path_finder.play_wall(w, players):
                         self.send_wall(network, c, w.orient)
-                        found = True
-                        break
+                        return ''
                     else:
-                        print("You can't block players!")
-            if found:
-                break
+                        return "You can't block players!"
+        return ''
 
     def draw(self, win):
         """Draw player on the game board"""

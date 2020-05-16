@@ -139,7 +139,10 @@ def client(host, port):
                     win.button_restart.show = False
                     n.send(';'.join(['R', str(num_player)]))
                 elif player.can_play_wall(game):    # Put a wall
-                    player.play_put_wall(pos, coords, walls, n, pf, players)
+                    mes = player.play_put_wall(
+                        pos, coords, walls, n, pf, players)
+                    if mes != '':
+                        win.update_info(mes)
 
             elif event.type == pygame.KEYDOWN:  # Move pawn
                 if player.can_play(game):
