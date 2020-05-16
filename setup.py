@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="quoridor",
-    version="0.0.1",
+    version="0.0.2",
     author="Quentin Deschamps",
     author_email="quentindeschamps18@gmail.com",
     description="Quoridor Online Game",
