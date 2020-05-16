@@ -16,14 +16,14 @@ from quoridor.client.src.sounds import Sounds
 def client(host, port):
     """Game client"""
     print("Welcome to Quoridor Online!")
+    print("Host:", host)
+    print("Port:", port)
     # Name input
     name = ''
     while name == '' or len(name) > 10:
         name = input("Enter your name: ").capitalize()
         if len(name) > 10:
             print("Too long")
-    print("Host:", host)
-    print("Port:", port)
     print("Waiting for the server...")
 
     # Connexion

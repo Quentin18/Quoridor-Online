@@ -16,7 +16,6 @@ class Game:
         self.last_play = ''
         self.winner = ''
         self.wanted_restart = []
-        print(f"Game {game_id} created")
 
     def add_player(self):
         """Add a player"""
@@ -70,3 +69,46 @@ class Game:
         print(f"Restart: {len(self.wanted_restart)}/{self.nb_players}")
         if len(self.wanted_restart) == self.nb_players:
             self.start()
+
+
+class Games:
+    """Manage games"""
+    def __init__(self, nb_players):
+        self.games = {}
+        self.nb_players = nb_players
+        self.num_player = 0
+        self.game_id = 0
+
+    def add_game(self):
+        """Create a new game"""
+        if self.game_id not in self.games:
+            self.num_player = 0
+            self.games[self.game_id] = Game(self.game_id, self.nb_players)
+            print("Game", self.game_id, "created")
+
+    def del_game(self, game_id):
+        """Delete a game"""
+        if game_id in self.games:
+            del self.games[game_id]
+            print("Game", game_id, "closed")
+
+    def accept_player(self):
+        """Accept a player"""
+        if self.game_id not in self.games:
+            self.add_game()
+        self.games[self.game_id].add_player()
+        return self.game_id, self.num_player
+
+    def launch_game(self):
+        """Lauch a game"""
+        if self.games[self.game_id].ready():
+            self.games[self.game_id].start()
+            self.game_id += 1
+        else:
+            self.num_player += 1
+
+    def find_game(self, game_id):
+        """Find a game"""
+        if game_id in self.games:
+            return self.games[game_id]
+        return None

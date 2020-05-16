@@ -6,19 +6,19 @@ import sys
 import socket
 from _thread import start_new_thread
 import pickle
-from quoridor.server.src.game import Game
+from quoridor.server.src.game import Games
 
 
 def threaded_client(conn, nb_players, num_player, game_id, games):
     """Manage threads for clients"""
     first_data = ";".join([str(nb_players), str(num_player)])
     conn.send(str.encode(first_data))
-    while True:
+    run = True
+    while run:
         try:
             data = conn.recv(2048).decode()
-            if game_id in games:
-                game = games[game_id]
-
+            game = games.find_game(game_id)
+            if game is not None:
                 if not data:
                     break
                 elif data.split(';')[0] == 'N':
@@ -29,16 +29,12 @@ def threaded_client(conn, nb_players, num_player, game_id, games):
                     game.restart(data)
                 conn.sendall(pickle.dumps(game))
             else:
-                break
+                run = False
         except socket.error as e:
             print(e)
 
     print("Lost connection")
-    try:
-        del games[game_id]
-        print("Closing game", game_id)
-    except Exception:
-        pass
+    games.del_game(game_id)
     conn.close()
 
 
@@ -52,27 +48,18 @@ def server(host, port, nb_players):
         str(e)
 
     s.listen(nb_players)
-    print("Server Started!\nWaiting for a connection...")
+    print(f"Server for {nb_players} players games started!")
+    print("Waiting for a connection...")
 
-    games = {}
-    num_player = 0
-    game_id = 0
+    games = Games(nb_players)
 
     while True:
         conn, addr = s.accept()
         print("Connected to:", addr)
-        if game_id not in games:
-            num_player = 0
-            games[game_id] = Game(game_id, nb_players)
-        games[game_id].add_player()
-
+        game_id, num_player = games.accept_player()
         start_new_thread(threaded_client,
                          (conn, nb_players, num_player, game_id, games))
-        if games[game_id].ready():
-            games[game_id].start()
-            game_id += 1
-        else:
-            num_player = num_player + 1
+        games.launch_game()
 
 
 if __name__ == "__main__":
