@@ -10,6 +10,7 @@ from quoridor.client.src.window import Window
 from quoridor.client.src.player import Players
 from quoridor.client.src.wall import Walls
 from quoridor.client.src.pathfinder import PathFinder
+from quoridor.client.src.sounds import Sounds
 
 
 def client(host, port):
@@ -49,10 +50,8 @@ def client(host, port):
     # Init pygame
     pygame.init()
     clock = pygame.time.Clock()
-    pygame.mixer.init()
     path = os.path.dirname(os.path.abspath(__file__))
-    file = "".join([path, "/sounds/winning_sound.wav"])
-    winning_sound = pygame.mixer.Sound(file)
+    sounds = Sounds(path)
 
     # Init game
     win = Window()
@@ -88,6 +87,10 @@ def client(host, port):
                 current_p = players.players[game.current_player]
                 win.update_info(f"Let's go! {current_p.name} plays!",
                                 current_p.color)
+                try:
+                    sounds.start_sound.play()
+                except Exception:
+                    pass
                 start = True
             elif game.wanted_restart != []:
                 nb = len(game.wanted_restart)
@@ -106,7 +109,10 @@ def client(host, port):
                                     current_p.color)
                 else:
                     win.update_info(f"{game.winner} wins!")
-                    winning_sound.play()
+                    try:
+                        sounds.winning_sound.play()
+                    except Exception:
+                        pass
                     win.button_restart.show = True
                     start = False
                 last_play = get_play
